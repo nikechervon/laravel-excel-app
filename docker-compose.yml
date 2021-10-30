@@ -1,0 +1,55 @@
+version: "3"
+services:
+    redis:
+        image: redis:alpine
+        restart: always
+        container_name: "mgt_redis"
+        volumes:
+            - redis_data:/data
+    mariadb:
+        container_name: "mgt_mariadb"
+        restart: always
+        image: mariadb:latest
+        env_file:
+            - ./docker/mariadb/.env
+        volumes:
+            - ./docker/mariadb/data:/var/lib/mariadb/data
+        ports:
+            - "3307:3306"
+    nginx:
+        image: nginx:alpine
+        restart: always
+        container_name: "mgt_nginx"
+        ports:
+            - "8000:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+        depends_on:
+            - app
+    app:
+        image: fp_app:alpine
+        restart: always
+        build:
+            context: .
+            dockerfile: docker/Dockerfile
+        container_name: "mgt_app"
+        volumes:
+            - ./:/var/www
+        stdin_open: true
+        tty: true
+        depends_on:
+            - mariadb
+            - redis
+        ports:
+            - "6001:6001"
+    rabbitmq:
+        image: rabbitmq:alpine
+        container_name: 'mgt_rabbitmq'
+        restart: always
+        ports:
+            - "5672:5672"
+volumes:
+    postgres_data:
+    redis_data:
+    pgadmin:
